@@ -1,0 +1,50 @@
+public with sharing class MaintenanceRequestHelper {
+    
+    public static void updateWorkOrders(List<Case> Requests) {
+        List<Case> newRequests = New List<Case>();
+        
+        Set<Id> equipmentsIds = New Set<Id>();
+        
+        for(Case request : Requests){
+            if(request.Status == 'Closed' && (request.Type == 'Repair' || request.Type == 'Routine Maintenance')){
+                
+                equipmentsIds.add(request.Equipment__c);
+            }
+        }
+        List<Product2> Cycles = [SELECT Id, Maintenance_Cycle__c FROM Product2 WHERE Id IN :equipmentsIds];
+        
+        for(Case request : Requests){
+            if(request.Status == 'Closed' && (request.Type == 'Repair' || request.Type == 'Routine Maintenance')){
+                
+                Case newMaintenance = New Case();
+                newMaintenance.Vehicle__c = request.Vehicle__c;
+                newMaintenance.Equipment__c = request.Equipment__c;
+                newMaintenance.Type = 'Routine Maintenance';
+                newMaintenance.Subject = 'new checkup';
+                newMaintenance.Date_Reported__c = date.today();
+                Integer shortest = 0;
+                if(Cycles.size() > 1){
+                    for(Integer i = 0; i < Cycles.size(); i++){
+                        if(i == 0){
+                            shortest = Integer.valueOf(Cycles[i].Maintenance_Cycle__c);
+                        } else{
+                            if(Cycles[i].Maintenance_Cycle__c <= shortest){
+                                
+                                shortest = Integer.valueOf(Cycles[i].Maintenance_Cycle__c);
+                            } 
+                        }
+                        newMaintenance.Date_Due__c = Date.today().addDays(shortest);
+                    }
+                }
+                newRequests.add(newMaintenance);
+            }
+            
+        }
+        if(newRequests != null && !newRequests.isEmpty()){
+            insert newRequests;
+        }
+    }
+    
+    
+    
+}
