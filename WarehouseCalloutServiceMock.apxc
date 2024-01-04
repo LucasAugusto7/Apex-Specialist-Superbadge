@@ -1,0 +1,13 @@
+@isTest
+public class WarehouseCalloutServiceMock implements HttpCalloutMock {
+    // implement http mock callout
+    public HttpResponse respond(HttpRequest request){
+        
+        HttpResponse response = New HttpResponse();
+        response.setHeader('Content-Type', 'application/json');
+        response.SetBody('[{"_id":"55d66226726b611100aaf742","replacement":true,"quantity":183,"name":"Cooling Fan","maintenanceperiod":0,"lifespan":0,"cost":300,"sku":"100004"}]');
+        response.SetStatusCode(200);
+        
+        return response;
+    }
+}
