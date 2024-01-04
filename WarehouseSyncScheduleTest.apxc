@@ -1,0 +1,16 @@
+@isTest
+public with sharing class WarehouseSyncScheduleTest {
+    // implement scheduled code here
+    @isTest
+    static void testSchedule(){
+        String CRON = '0 0 0 3 1 ?';
+        WarehouseSyncSchedule WarehouseSch = New WarehouseSyncSchedule();
+        String testJob = 'Test Scheduled Job';
+        
+        Test.StartTest();
+        String JobId = System.Schedule(testJob, CRON, WarehouseSch);
+        Test.StopTest();
+        Integer countJob = [SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.JobType = '7' AND Id = :JobId];
+        System.assertEquals(1, countJob, 'number of jobs should 1');
+    }
+}
