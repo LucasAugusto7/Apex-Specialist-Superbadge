@@ -1,0 +1,167 @@
+@isTest
+public with sharing class MaintenanceRequestHelperTest {
+    // implement scheduled code here
+    @isTest
+    static void updateWorkOrdersPositive(){
+        List<Product2> equipments = New List<Product2>();
+        
+        Product2 equip1 = New Product2();
+        equip1.Name = 'equip1 test';
+        equip1.Replacement_Part__c = true;
+        equip1.Cost__c = 200;
+        equip1.Current_Inventory__c = 25;
+        equip1.Lifespan_Months__c = 6;
+        equip1.Maintenance_Cycle__c = 11;
+        equip1.Warehouse_SKU__c = '100031';
+        
+        Product2 equip2 = New Product2();
+        equip2.Name = 'equip2 test';
+        equip2.Replacement_Part__c = true;
+        equip2.Cost__c = 325;
+        equip2.Current_Inventory__c = 18;
+        equip2.Lifespan_Months__c = 9;
+        equip2.Maintenance_Cycle__c = 7;
+        equip2.Warehouse_SKU__c = '100032';
+        
+        equipments.add(equip1);
+        equipments.add(equip2);
+        
+        List<Vehicle__c> vehicles = New List<Vehicle__c>();
+        
+        Vehicle__c testVehi = New Vehicle__c();
+        testVehi.Name = 'Vehicle Test 1';
+        
+        Vehicle__c testVehi2 = New Vehicle__c();
+        testVehi2.Name = 'Vehicle Test 2';
+        vehicles.add(testVehi);
+        vehicles.add(testVehi2);
+        insert vehicles;
+        insert equipments;
+        
+        
+        
+        List<Case> Requests = New List<Case>();
+        
+        Case NewRequest = New Case();
+        NewRequest.Status = 'Closed';
+        NewRequest.Type = 'Repair';
+        NewRequest.Origin = 'Web';
+        NewRequest.Equipment__c = equip1.Id;
+        NewRequest.Vehicle__c = testVehi.Id;
+        
+        Case NewRequest2 = New Case();
+        NewRequest2.Status = 'Closed';
+        NewRequest2.Type = 'Repair';
+        NewRequest2.Origin = 'Web';
+        NewRequest2.Equipment__c = equip2.Id;
+        NewRequest2.Vehicle__c = testVehi2.Id;
+        
+        Requests.add(NewRequest);
+        Requests.add(NewRequest2);
+        
+        insert Requests;
+        Set<Id> requestIds = New Set<Id>();
+        for(Case request : Requests){
+            requestIds.add(request.Equipment__c);
+        }
+        
+        Test.StartTest();
+        MaintenanceRequestHelper.updateWorkOrders(Requests);
+        Test.StopTest();
+        
+        List<Case> NewRequests = [SELECT Id, Type, Status, Equipment__c, Vehicle__c FROM Case WHERE Equipment__c IN :requestIds];
+        System.assertEquals(2, NewRequests.size(), 'Number of requests should be ' + Requests.size());
+        
+    }
+    @isTest
+    static void updateWorkOrdersNegative(){
+        List<Case> Requests = New List<Case>();
+        
+        Product2 equip1 = New Product2();
+        equip1.Name = 'equip1 test';
+        equip1.Replacement_Part__c = true;
+        equip1.Cost__c = 200;
+        equip1.Current_Inventory__c = 25;
+        equip1.Lifespan_Months__c = 6;
+        equip1.Maintenance_Cycle__c = 11;
+        equip1.Warehouse_SKU__c = '100031';
+        
+        Vehicle__c testVehi = New Vehicle__c();
+        testVehi.Name = 'Vehicle Test 1';
+        
+        insert equip1;
+        insert testVehi;
+        
+        for(Integer i = 0; i < 5; i++){
+            Case NewRequest = New Case();
+            NewRequest.Status = 'Open';
+            NewRequest.Type = 'Repair';
+            NewRequest.Origin = 'Web';
+            NewRequest.Equipment__c = equip1.Id;
+            NewRequest.Vehicle__c = testVehi.Id;
+            Requests.add(NewRequest);
+            
+        }
+        insert Requests;
+        
+        Set<Id> requestIds = New Set<Id>();
+        for(Case request : Requests){
+            requestIds.add(request.Equipment__c);
+        }
+        
+        Test.StartTest();
+        MaintenanceRequestHelper.updateWorkOrders(Requests);
+        Test.StopTest();
+        
+        List<Case> NewRequests = [SELECT Id, Type, Status, Equipment__c, Vehicle__c FROM Case WHERE Equipment__c IN :requestIds];
+        System.assertEquals(0, NewRequests.size(), 'Number of requests should be ' + Requests.size());
+        
+    }
+    @isTest
+    static void updateWorkOrdersBulk(){
+        
+        List<Product2> Equipments = New List<Product2>();
+        List<Vehicle__c> vehiclesList = New List<Vehicle__c>();
+        
+        for(Integer i = 0; i < 300; i++){
+            Product2 equip = New Product2();
+            equip.Name = 'equip test ' + i;
+            equip.Replacement_Part__c = true;
+            equip.Cost__c = 200;
+            equip.Current_Inventory__c = 25;
+            equip.Lifespan_Months__c = 6;
+            equip.Maintenance_Cycle__c = 11;
+            equip.Warehouse_SKU__c = '10003' + i;
+            Equipments.add(equip);
+            
+            Vehicle__c testVehi = New Vehicle__c();
+            testVehi.Name = 'Vehicle Test ' + i;
+            vehiclesList.add(testVehi);
+        }
+        insert Equipments;
+        insert vehiclesList;
+        List<Case> requests = New List<Case>();
+        for(Integer i = 0; i < Equipments.size(); i++){
+            Case NewRequest = New Case();
+            NewRequest.Status = 'Closed';
+            NewRequest.Type = 'Repair';
+            NewRequest.Origin = 'Web';
+            NewRequest.Equipment__c = Equipments[i].Id;
+            NewRequest.Vehicle__c = vehiclesList[i].Id;
+            Requests.add(NewRequest);
+        }
+        insert requests;
+        update requests;
+        Set<Id> requestsIds = New Set<Id>();
+        
+        for(Case request : requests){
+            requestsIds.add(request.Equipment__c);
+        }
+        Test.StartTest();
+        MaintenanceRequestHelper.updateWorkOrders(Requests);
+        Test.StopTest();
+        
+        List<Case> NewRequests = [SELECT Id, Type, Status, Equipment__c, Vehicle__c FROM Case WHERE Equipment__c IN :requestsIds];
+        System.assertEquals(300, NewRequests.size(), 'Number of requests should be ' + Requests.size());
+    }
+}
